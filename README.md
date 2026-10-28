@@ -1,18 +1,18 @@
-# 🎵 Harmonia PCP — Sistema Integrado de PCP para Escola de Música de Pequeno Porte
+# 🎵 Instituto Nilto Musicalização — Projeto Caminhos da Música (Sistema Integrado de PCP)
 
-Aplicação desktop multiplataforma desenvolvida com **Tauri v2 (Rust) + React + Vite**, projetada para substituir controles informais, fichas de papel e anotações dispersas por uma gestão padronizada, descentralizada e orientada por dados (**Data-Driven PCP**).
+Aplicação desktop multiplataforma desenvolvida com **Tauri v2 (Rust) + React + Vite**, projetada para o **Instituto Nilto Musicalização — Projeto Caminhos da Música**, substituindo controles informais, fichas de papel e anotações dispersas por uma gestão padronizada, descentralizada e orientada por dados (**Data-Driven PCP**).
 
 ---
 
 ## 🏗️ Arquitetura e Módulos da Ferramenta
 
-O sistema é estruturado nos **cinco pilares fundamentais** de Planejamento e Controle da Produção (PCP) aplicados ao setor de serviços:
+O sistema é estruturado nos **cinco pilares fundamentais** de Planejamento e Controle da Produção (PCP) aplicados ao setor de serviços educacionais e musicais:
 
 1. **Módulo 1 — Cadastros Base**:
-   - Centralização do banco de dados de recursos produtivos da escola:
+   - Centralização do banco de dados de recursos produtivos da instituição:
    - **Professores**: Cadastro completo com especialidades e carga horária semanal disponível.
    - **Salas Disponíveis**: Capacidade máxima de alunos, disponibilidade semanal e equipamentos fixos instalados.
-   - **Inventário de Instrumentos Móveis**: Controle patrimonial e de status (`Disponível` vs. `Manutenção`).
+   - **Inventário de Instrumentos Móveis**: Controle patrimonial (`INM-xxx`) e de status (`Disponível` vs. `Manutenção`).
 
 2. **Módulo 2 — Gestão de Alunos e Matrículas**:
    - Repositório unificado com histórico pedagógico/administrativo e controle em tempo real do status dos alunos (**Ativos**, **Trancados** ou **Cancelados**), eliminando fichas de papel.
@@ -31,25 +31,7 @@ O sistema é estruturado nos **cinco pilares fundamentais** de Planejamento e Co
 
 ## 📊 Principais Indicadores de Desempenho (KPIs) Implementados
 
-- **Taxa de Ocupação das Salas (%)**: Mensura o aproveitamento da infraestrutura física da escola.
+- **Taxa de Ocupação das Salas (%)**: Mensura o aproveitamento da infraestrutura física.
 - **Taxa de Utilização dos Professores (%)**: Avalia a eficiência da alocação da carga horária docente.
 - **Índice de Aulas Realizadas e Absenteísmo (%)**: Monitora cancelamentos, faltas e desvios na programação (*Planejado vs. Realizado*).
 - **Taxa de Evasão / Churn Rate (%)**: Acompanha a retenção de alunos mês a mês.
-
----
-
-## 🚀 Instalação e Execução
-
-### Pacotes Pré-Compilados (Releases)
-Na aba **[Releases](../../releases)** do repositório você encontra os instaladores gerados para todas as plataformas:
-- **Windows**: Setup `.exe` (NSIS) e `.msi`
-- **Linux**: Pacotes `.deb` e `.AppImage`
-- **macOS**: Imagem `.dmg`
-
-### Desenvolvimento Local
-```bash
-npm install
-npm run dev
-# Para compilar com Tauri:
-npm run tauri build
-```

@@ -56,23 +56,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
-          releaseName: 'Harmonia PCP v__VERSION__ — Sistema Integrado de PCP para Escola de Música'
+          releaseName: 'Instituto Nilto Musicalização — Projeto Caminhos da Música (PCP v__VERSION__)'
           releaseBody: |
-            ## Harmonia PCP v__VERSION__ — Sistema Integrado de PCP para Escola de Música de Pequeno Porte
+            ## 🎵 Instituto Nilto Musicalização — Projeto Caminhos da Música (PCP v__VERSION__)
 
-            Aplicação desktop multiplataforma construída em **Tauri v2 + React** fundamentada nos conceitos de **Planejamento e Controle da Produção (PCP)** adaptados ao setor de serviços educacionais musicais.
+            Aplicação desktop multiplataforma construída em **Tauri v2 + React** fundamentada nos conceitos de **Planejamento e Controle da Produção (PCP)** adaptados à gestão musical e educacional.
+
+            ### ✨ Novidades desta Versão (v__VERSION__):
+            - Identidade Institucional atualizada para **Instituto Nilto Musicalização — Projeto Caminhos da Música**.
+            - Novo design executivo e responsivo com paleta sóbria (Verde-Petróleo, Ardósia e Neutros Quentes, sem cores vibrantes/roxo) e alternância entre **Modo Claro Executivo** e **Modo Grafite Sóbrio**.
+            - Layout adaptativo para diferentes resoluções de tela.
 
             ### 📦 Instaladores Disponíveis nesta Release:
             - **Windows**: Instalador Setup (`.exe` NSIS e `.msi`)
             - **Linux**: Pacotes `.deb` (Debian/Ubuntu) e `.AppImage`
             - **macOS**: Imagem de Disco `.dmg`
-
-            ### 🧩 Os 5 Módulos Integrados:
-            1. **Módulo 1 — Cadastros Base**: Professores (com carga horária), Salas disponíveis (capacidade e equipamentos) e Inventário de instrumentos móveis.
-            2. **Módulo 2 — Gestão de Alunos e Matrículas**: Repositório unificado com histórico e status (`Ativo`, `Trancado` ou `Cancelado`).
-            3. **Módulo 3 — Quadro de Programação e Alocação (PCP Operacional)**: Grade horária semanal que cruza professor, aluno, sala e instrumento com validações automáticas e alertas visuais contra overbooking de salas ou sobreposição docente.
-            4. **Módulo 4 — Registro Operacional**: Acompanhamento diário do *Planejado vs. Realizado* (`Realizada`, `Falta do Aluno`, `Cancelada` ou `Remarcada`).
-            5. **Módulo 5 — Dashboard de Indicadores Gerenciais (Painel de PCP)**: Consolidação automática dos 4 KPIs estratégicos (Taxa de Ocupação das Salas, Taxa de Utilização dos Professores, Índice de Aulas Realizadas e Absenteísmo, e Taxa de Evasão / Churn Rate) + Exportação para Excel/Google Planilhas (`.csv`).
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

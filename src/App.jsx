@@ -19,19 +19,34 @@ import {
   Clock,
   Sparkles,
   FileSpreadsheet,
+  Sun,
+  Moon,
 } from 'lucide-react';
-import { INITIAL_DATA, DIAS_SEMANA, HORARIOS_PADRAO } from './data/initialData';
+import {
+  INITIAL_DATA,
+  DIAS_SEMANA,
+  HORARIOS_PADRAO,
+  NOME_INSTITUICAO_PADRAO,
+} from './data/initialData';
 import { validarAlocacao, mapearConflitosGrade, calcularKPIs } from './utils/pcpEngine';
-import { exportarRelatorioCompletoCSV, downloadCsv } from './utils/exportExcel';
+import { exportarRelatorioCompletoCSV } from './utils/exportExcel';
 
-const STORAGE_KEY = 'harmonia_pcp_escola_musica_v1';
+const STORAGE_KEY = 'instituto_nilto_caminhos_musica_pcp_v2';
+const THEME_KEY = 'instituto_nilto_theme_v2';
 
 export default function App() {
   const [state, setState] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          ...parsed,
+          escola: {
+            ...(parsed.escola || {}),
+            nome: NOME_INSTITUICAO_PADRAO,
+          },
+        };
       }
     } catch (e) {
       console.error('Erro ao ler dados locais:', e);
@@ -39,7 +54,15 @@ export default function App() {
     return INITIAL_DATA;
   });
 
-  const [abaAtiva, setAbaAtiva] = useState('mod5'); // Inicia no Dashboard de PCP ou permite navegar pelos 5 módulos
+  const [tema, setTema] = useState(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) || 'light';
+    } catch {
+      return 'light';
+    }
+  });
+
+  const [abaAtiva, setAbaAtiva] = useState('mod5');
   const [subAbaMod1, setSubAbaMod1] = useState('professores');
   const [notificacao, setNotificacao] = useState(null);
 
@@ -66,7 +89,7 @@ export default function App() {
 
   const [novaSala, setNovaSala] = useState({
     nome: '',
-    capacidade: 4,
+    capacidade: 6,
     equipamentos: '',
     horasDisponiveisSemana: 24,
     status: 'Disponível',
@@ -88,7 +111,7 @@ export default function App() {
     professorId: state.professores[0]?.id || '',
     status: 'Ativo',
     dataMatricula: new Date().toISOString().slice(0, 10),
-    mensalidade: 300,
+    mensalidade: 180,
     telefone: '',
     historico: '',
   });
@@ -118,11 +141,17 @@ export default function App() {
     observacoes: '',
   });
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', tema);
+    try {
+      localStorage.setItem(THEME_KEY, tema);
+    } catch {}
+  }, [tema]);
+
   // Persistência automática
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      // Se estiver em ambiente Tauri Desktop, sincroniza também via IPC se disponível
       if (window.__TAURI_INTERNALS__) {
         import('@tauri-apps/api/core')
           .then(({ invoke }) => {
@@ -201,7 +230,7 @@ export default function App() {
     setState((s) => ({ ...s, salas: [...s.salas, item] }));
     setNovaSala({
       nome: '',
-      capacidade: 4,
+      capacidade: 6,
       equipamentos: '',
       horasDisponiveisSemana: 24,
       status: 'Disponível',
@@ -223,7 +252,7 @@ export default function App() {
     const item = {
       ...novoInst,
       id: `inst-${Date.now()}`,
-      patrimonio: novoInst.patrimonio.trim() || `PAT-${state.instrumentos.length + 101}`,
+      patrimonio: novoInst.patrimonio.trim() || `INM-${String(state.instrumentos.length + 1).padStart(3, '0')}`,
     };
     setState((s) => ({ ...s, instrumentos: [...s.instrumentos, item] }));
     setNovoInst({
@@ -261,7 +290,7 @@ export default function App() {
       id: `alu-${Date.now()}`,
       matricula:
         novoAluno.matricula.trim() ||
-        `MAT-2026-${String(state.alunos.length + 1).padStart(3, '0')}`,
+        `CAM-2026-${String(state.alunos.length + 1).padStart(3, '0')}`,
       mensalidade: Number(novoAluno.mensalidade) || 0,
       mesReferenciaStatus: novoAluno.dataMatricula.slice(0, 7),
     };
@@ -273,7 +302,7 @@ export default function App() {
       professorId: state.professores[0]?.id || '',
       status: 'Ativo',
       dataMatricula: new Date().toISOString().slice(0, 10),
-      mensalidade: 300,
+      mensalidade: 180,
       telefone: '',
       historico: '',
     });
@@ -349,13 +378,12 @@ export default function App() {
     };
     setState((s) => ({ ...s, alocacoes: [...s.alocacoes, conflitoDemo] }));
     mostrarAviso(
-      `Conflito simulado em ${primeira.diaSemana} às ${primeira.horario}! Veja o alerta vermelho piscando na grade.`,
+      `Conflito simulado em ${primeira.diaSemana} às ${primeira.horario}! Veja o destaque visual de conflito na grade.`,
       'aviso'
     );
   };
 
   const resolverTodosConflitos = () => {
-    // Mantém apenas alocações sem sobreposição na ordem original
     setState((s) => {
       const limpas = [];
       for (const al of s.alocacoes) {
@@ -438,7 +466,9 @@ export default function App() {
 
   const restaurarDadosIniciais = () => {
     setState(INITIAL_DATA);
-    mostrarAviso('Banco de dados restaurado para o cenário padrão da Escola de Música!');
+    mostrarAviso(
+      'Banco de dados restaurado para o cenário padrão do Instituto Nilto Musicalização!'
+    );
   };
 
   // Alunos filtrados (Módulo 2)
@@ -473,15 +503,15 @@ export default function App() {
 
   return (
     <div className="app-layout">
-      {/* MENU LATERAL (5 PILARES DO PCP) */}
+      {/* MENU LATERAL INSTITUCIONAL (5 PILARES DO PCP) */}
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-icon">
             <Music size={22} />
           </div>
           <div>
-            <div className="brand-title">Harmonia PCP</div>
-            <div className="brand-subtitle">Gestão Integrada de Escola de Música</div>
+            <div className="brand-title">Instituto Nilto Musicalização</div>
+            <div className="brand-subtitle">Projeto Caminhos da Música</div>
           </div>
         </div>
 
@@ -492,7 +522,7 @@ export default function App() {
             onClick={() => setAbaAtiva('mod5')}
           >
             <LayoutDashboard size={18} />
-            <span>Módulo 5 — Dashboard PCP</span>
+            <span>Módulo 5 — Painel de PCP</span>
           </button>
 
           <div className="nav-section-label">Pilares Operacionais</div>
@@ -543,21 +573,16 @@ export default function App() {
 
         <div className="sidebar-footer">
           <button
-            className="btn btn-secondary"
-            style={{ width: '100%', justifyContent: 'flex-start' }}
+            className="sidebar-footer-btn"
             onClick={() => {
               exportarRelatorioCompletoCSV(state, kpis);
               mostrarAviso('Planilha integrada CSV (compatível com Excel/Sheets) exportada!');
             }}
           >
             <FileSpreadsheet size={16} />
-            <span>Exportar p/ Excel (CSV)</span>
+            <span>Exportar Planilha (Excel/CSV)</span>
           </button>
-          <button
-            className="btn btn-secondary"
-            style={{ width: '100%', justifyContent: 'flex-start' }}
-            onClick={restaurarDadosIniciais}
-          >
+          <button className="sidebar-footer-btn" onClick={restaurarDadosIniciais}>
             <RotateCcw size={16} />
             <span>Restaurar Dados Padrão</span>
           </button>
@@ -568,24 +593,36 @@ export default function App() {
       <main className="main-content">
         <header className="topbar">
           <div>
+            <div className="institution-tag">
+              <Music size={12} />
+              <span>Instituto Nilto Musicalização — Projeto Caminhos da Música</span>
+            </div>
             <h1 className="page-title">
-              {abaAtiva === 'mod5' && 'Módulo 5 — Dashboard de Indicadores Gerenciais (Painel de PCP)'}
+              {abaAtiva === 'mod5' &&
+                'Módulo 5 — Dashboard de Indicadores Gerenciais (Painel de PCP)'}
               {abaAtiva === 'mod1' && 'Módulo 1 — Cadastros Base (Recursos Produtivos)'}
               {abaAtiva === 'mod2' && 'Módulo 2 — Gestão de Alunos e Matrículas'}
-              {abaAtiva === 'mod3' && 'Módulo 3 — Quadro de Programação e Alocação (PCP Operacional)'}
+              {abaAtiva === 'mod3' &&
+                'Módulo 3 — Quadro de Programação e Alocação (PCP Operacional)'}
               {abaAtiva === 'mod4' && 'Módulo 4 — Registro Operacional (Planejado vs. Realizado)'}
             </h1>
             <p className="page-subtitle">
-              {state.escola.nome} • Gestão orientada por dados (Data-Driven PCP)
+              Planejamento e Controle da Produção (PCP) • Gestão Padronizada e Orientada por Dados
             </p>
           </div>
 
           <div className="topbar-actions">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setTema((t) => (t === 'light' ? 'dark' : 'light'))}
+              title="Alternar entre Modo Claro Executivo e Modo Grafite Sóbrio"
+            >
+              {tema === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+              <span>{tema === 'light' ? 'Modo Grafite' : 'Modo Claro'}</span>
+            </button>
+
             {infoConflitos.totalConflitos > 0 && (
-              <button
-                className="btn btn-danger"
-                onClick={() => setAbaAtiva('mod3')}
-              >
+              <button className="btn btn-danger" onClick={() => setAbaAtiva('mod3')}>
                 <AlertTriangle size={16} />
                 <span>{infoConflitos.totalConflitos} Conflito(s) na Grade</span>
               </button>
@@ -636,7 +673,7 @@ export default function App() {
                     <span className="kpi-label">1. Taxa de Ocupação das Salas</span>
                     <div
                       className="kpi-icon"
-                      style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}
+                      style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
                     >
                       <Building2 size={20} />
                     </div>
@@ -647,7 +684,7 @@ export default function App() {
                       className="progress-fill"
                       style={{
                         width: `${Math.min(100, kpis.ocupacaoSalas.taxaGeral)}%`,
-                        background: '#6366f1',
+                        background: 'var(--accent)',
                       }}
                     />
                   </div>
@@ -666,7 +703,7 @@ export default function App() {
                     <span className="kpi-label">2. Utilização dos Professores</span>
                     <div
                       className="kpi-icon"
-                      style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}
+                      style={{ background: 'var(--success-soft)', color: 'var(--success)' }}
                     >
                       <UserCheck size={20} />
                     </div>
@@ -677,7 +714,7 @@ export default function App() {
                       className="progress-fill"
                       style={{
                         width: `${Math.min(100, kpis.utilizacaoProfessores.taxaGeral)}%`,
-                        background: '#10b981',
+                        background: 'var(--success)',
                       }}
                     />
                   </div>
@@ -696,7 +733,7 @@ export default function App() {
                     <span className="kpi-label">3. Aulas Realizadas vs. Absenteísmo</span>
                     <div
                       className="kpi-icon"
-                      style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}
+                      style={{ background: 'var(--warning-soft)', color: 'var(--warning)' }}
                     >
                       <Clock size={20} />
                     </div>
@@ -707,7 +744,7 @@ export default function App() {
                       className="progress-fill"
                       style={{
                         width: `${Math.min(100, kpis.execucaoOperacional.indiceRealizadas)}%`,
-                        background: '#f59e0b',
+                        background: 'var(--warning)',
                       }}
                     />
                   </div>
@@ -716,7 +753,8 @@ export default function App() {
                       Absenteísmo/Cancel.: {kpis.execucaoOperacional.indiceAbsenteismo}%
                     </span>
                     <span className="badge badge-warning">
-                      {kpis.execucaoOperacional.realizadas}/{kpis.execucaoOperacional.totalPlanejado} aulas
+                      {kpis.execucaoOperacional.realizadas}/{kpis.execucaoOperacional.totalPlanejado}{' '}
+                      aulas
                     </span>
                   </div>
                 </div>
@@ -727,7 +765,7 @@ export default function App() {
                     <span className="kpi-label">4. Taxa de Evasão / Churn Rate</span>
                     <div
                       className="kpi-icon"
-                      style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}
+                      style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}
                     >
                       <TrendingDown size={20} />
                     </div>
@@ -738,14 +776,15 @@ export default function App() {
                       className="progress-fill"
                       style={{
                         width: `${Math.min(100, kpis.retencaoAlunos.taxaRetencao)}%`,
-                        background: '#10b981',
+                        background: 'var(--success)',
                       }}
                     />
                   </div>
                   <div className="kpi-meta">
                     <span>Retenção Ativa: {kpis.retencaoAlunos.taxaRetencao}%</span>
                     <span className="badge badge-danger">
-                      {kpis.retencaoAlunos.cancelados} cancel. / {kpis.retencaoAlunos.trancados} tranc.
+                      {kpis.retencaoAlunos.cancelados} cancel. / {kpis.retencaoAlunos.trancados}{' '}
+                      tranc.
                     </span>
                   </div>
                 </div>
@@ -759,7 +798,13 @@ export default function App() {
                     <h3 className="card-title">
                       <Building2 size={18} /> Aproveitamento da Infraestrutura (Salas)
                     </h3>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setAbaAtiva('mod1')}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setAbaAtiva('mod1');
+                        setSubAbaMod1('salas');
+                      }}
+                    >
                       Gerenciar Salas
                     </button>
                   </div>
@@ -771,7 +816,9 @@ export default function App() {
                             display: 'flex',
                             justifyContent: 'space-between',
                             fontSize: '0.84rem',
-                            marginBottom: 4,
+                            marginBottom: 5,
+                            gap: 8,
+                            flexWrap: 'wrap',
                           }}
                         >
                           <strong>{sala.nome}</strong>
@@ -787,10 +834,10 @@ export default function App() {
                               width: `${Math.min(100, sala.taxaOcupacao)}%`,
                               background:
                                 sala.taxaOcupacao > 90
-                                  ? '#ef4444'
+                                  ? 'var(--danger)'
                                   : sala.taxaOcupacao >= 50
-                                  ? '#6366f1'
-                                  : '#3b82f6',
+                                  ? 'var(--accent)'
+                                  : 'var(--info)',
                             }}
                           />
                         </div>
@@ -805,7 +852,13 @@ export default function App() {
                     <h3 className="card-title">
                       <UserCheck size={18} /> Eficiência de Alocação Docente (Professores)
                     </h3>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setAbaAtiva('mod1')}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setAbaAtiva('mod1');
+                        setSubAbaMod1('professores');
+                      }}
+                    >
                       Gerenciar Docentes
                     </button>
                   </div>
@@ -817,7 +870,9 @@ export default function App() {
                             display: 'flex',
                             justifyContent: 'space-between',
                             fontSize: '0.84rem',
-                            marginBottom: 4,
+                            marginBottom: 5,
+                            gap: 8,
+                            flexWrap: 'wrap',
                           }}
                         >
                           <span>
@@ -838,10 +893,10 @@ export default function App() {
                               width: `${Math.min(100, prof.taxaUtilizacao)}%`,
                               background:
                                 prof.taxaUtilizacao > 100
-                                  ? '#ef4444'
+                                  ? 'var(--danger)'
                                   : prof.taxaUtilizacao >= 60
-                                  ? '#10b981'
-                                  : '#f59e0b',
+                                  ? 'var(--success)'
+                                  : 'var(--warning)',
                             }}
                           />
                         </div>
@@ -883,7 +938,7 @@ export default function App() {
                         </tr>
                         <tr>
                           <td>
-                            <span className="badge badge-warning">Remarcada</span>
+                            <span className="badge badge-info">Remarcada</span>
                           </td>
                           <td>{kpis.execucaoOperacional.remarcadas}</td>
                           <td>
@@ -900,7 +955,7 @@ export default function App() {
                         </tr>
                         <tr>
                           <td>
-                            <span className="badge badge-danger">Falta do Aluno</span>
+                            <span className="badge badge-warning">Falta do Aluno</span>
                           </td>
                           <td>{kpis.execucaoOperacional.faltasAluno}</td>
                           <td>{kpis.execucaoOperacional.taxaFaltasAluno}%</td>
@@ -962,9 +1017,15 @@ export default function App() {
                                 <strong>{h.mes}</strong>
                               </td>
                               <td>{h.ativosInicio}</td>
-                              <td style={{ color: '#34d399' }}>+{h.novasMatriculas}</td>
-                              <td style={{ color: '#fbbf24' }}>{h.trancados}</td>
-                              <td style={{ color: '#f87171' }}>{h.cancelados}</td>
+                              <td style={{ color: 'var(--success)', fontWeight: 600 }}>
+                                +{h.novasMatriculas}
+                              </td>
+                              <td style={{ color: 'var(--warning)', fontWeight: 600 }}>
+                                {h.trancados}
+                              </td>
+                              <td style={{ color: 'var(--danger)', fontWeight: 600 }}>
+                                {h.cancelados}
+                              </td>
                               <td>
                                 <span
                                   className={`badge ${
@@ -1072,7 +1133,7 @@ export default function App() {
                           <label>E-mail</label>
                           <input
                             className="form-control"
-                            placeholder="professor@escola.com"
+                            placeholder="professor@caminhosdamusica.org.br"
                             value={novoProf.email}
                             onChange={(e) => setNovoProf({ ...novoProf, email: e.target.value })}
                           />
@@ -1161,7 +1222,7 @@ export default function App() {
                           <input
                             className="form-control"
                             required
-                            placeholder="Ex: Sala 05 — Prática de Sopro"
+                            placeholder="Ex: Sala 05 — Musicalização & Sopro"
                             value={novaSala.nome}
                             onChange={(e) => setNovaSala({ ...novaSala, nome: e.target.value })}
                           />
@@ -1171,7 +1232,7 @@ export default function App() {
                           <input
                             type="number"
                             min="1"
-                            max="30"
+                            max="40"
                             className="form-control"
                             required
                             value={novaSala.capacidade}
@@ -1197,7 +1258,7 @@ export default function App() {
                             }
                           />
                         </div>
-                        <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                           <label>Equipamentos Fixos Instalados *</label>
                           <input
                             className="form-control"
@@ -1288,7 +1349,7 @@ export default function App() {
                           <label>Código de Patrimônio</label>
                           <input
                             className="form-control"
-                            placeholder="Ex: PAT-006"
+                            placeholder="Ex: INM-006"
                             value={novoInst.patrimonio}
                             onChange={(e) =>
                               setNovoInst({ ...novoInst, patrimonio: e.target.value })
@@ -1315,6 +1376,7 @@ export default function App() {
                             }
                           >
                             <option value="Cordas">Cordas</option>
+                            <option value="Cordas Friccionadas">Cordas Friccionadas</option>
                             <option value="Teclas">Teclas</option>
                             <option value="Percussão">Percussão</option>
                             <option value="Sopro">Sopro</option>
@@ -1332,7 +1394,7 @@ export default function App() {
                             <option value="Manutenção">Manutenção</option>
                           </select>
                         </div>
-                        <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                           <label>Observações de Conservação / Luthieria</label>
                           <input
                             className="form-control"
@@ -1443,11 +1505,11 @@ export default function App() {
                       />
                     </div>
                     <div className="form-group">
-                      <label>Curso / Instrumento *</label>
+                      <label>Curso / Oficina Musical *</label>
                       <input
                         className="form-control"
                         required
-                        placeholder="Ex: Piano Popular"
+                        placeholder="Ex: Musicalização & Violão"
                         value={novoAluno.curso}
                         onChange={(e) => setNovoAluno({ ...novoAluno, curso: e.target.value })}
                       />
@@ -1481,7 +1543,7 @@ export default function App() {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label>Mensalidade (R$)</label>
+                      <label>Contribuição / Mensalidade (R$)</label>
                       <input
                         type="number"
                         className="form-control"
@@ -1504,7 +1566,7 @@ export default function App() {
                       <label>Histórico Pedagógico e Observações (Substitui Fichas de Papel)</label>
                       <input
                         className="form-control"
-                        placeholder="Nível do aluno, objetivos musicais, restrições de horário, histórico de evolução..."
+                        placeholder="Nível do aluno, evolução musical, restrições de horário..."
                         value={novoAluno.historico}
                         onChange={(e) => setNovoAluno({ ...novoAluno, historico: e.target.value })}
                       />
@@ -1517,14 +1579,14 @@ export default function App() {
               </div>
 
               <div className="card">
-                <div className="card-header" style={{ flexWrap: 'wrap' }}>
+                <div className="card-header">
                   <h3 className="card-title">
                     Repositório de Alunos ({alunosFiltrados.length} exibidos)
                   </h3>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <input
                       className="form-control"
-                      style={{ width: 220 }}
+                      style={{ width: 240 }}
                       placeholder="Buscar por nome, matrícula ou curso..."
                       value={buscaAluno}
                       onChange={(e) => setBuscaAluno(e.target.value)}
@@ -1589,7 +1651,7 @@ export default function App() {
                             </span>
                           </td>
                           <td>
-                            <div style={{ display: 'flex', gap: 4 }}>
+                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                               {['Ativo', 'Trancado', 'Cancelado'].map((st) => (
                                 <button
                                   key={st}
@@ -1627,12 +1689,12 @@ export default function App() {
             <div>
               {/* Painel de Alocação com Validação Automática Preventiva */}
               <div className="card" style={{ marginBottom: 20 }}>
-                <div className="card-header" style={{ flexWrap: 'wrap' }}>
+                <div className="card-header">
                   <h3 className="card-title">
                     <Calendar size={18} /> Alocar Aula na Grade Semanal (Cruzamento Professor ×
                     Aluno × Sala × Instrumento)
                   </h3>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <label
                       style={{
                         display: 'flex',
@@ -1668,7 +1730,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Alerta de Validação em Tempo Real do Formulário (Formatação Condicional Preventiva) */}
+                {/* Alerta de Validação em Tempo Real do Formulário */}
                 {!validacaoPreviaAloc.valido && (
                   <div className="alert-box alert-danger">
                     <AlertTriangle size={20} style={{ flexShrink: 0 }} />
@@ -1841,8 +1903,8 @@ export default function App() {
 
               {/* Controles de Visualização da Grade */}
               <div className="card">
-                <div className="card-header" style={{ flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div className="card-header">
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <button
                       className={`btn btn-sm ${
                         visaoGrade === 'matriz' ? 'btn-primary' : 'btn-secondary'
@@ -1864,7 +1926,7 @@ export default function App() {
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <select
                       className="form-control"
-                      style={{ width: 210 }}
+                      style={{ width: 220 }}
                       value={filtroSalaGrade}
                       onChange={(e) => setFiltroSalaGrade(e.target.value)}
                     >
@@ -1878,7 +1940,7 @@ export default function App() {
 
                     <select
                       className="form-control"
-                      style={{ width: 210 }}
+                      style={{ width: 220 }}
                       value={filtroProfGrade}
                       onChange={(e) => setFiltroProfGrade(e.target.value)}
                     >
@@ -1940,21 +2002,27 @@ export default function App() {
                                         }}
                                       >
                                         <strong>{getNomeSala(al.salaId).split('—')[0]}</strong>
-                                        <span style={{ fontSize: '0.7rem', opacity: 0.85 }}>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>
                                           {al.duracaoHoras}h
                                         </span>
                                       </div>
                                       <div>👨‍🏫 {getNomeProf(al.professorId)}</div>
                                       <div>🎓 {getNomeAluno(al.alunoId)}</div>
                                       {al.instrumentoId && (
-                                        <div style={{ fontSize: '0.7rem', color: '#a5b4fc' }}>
+                                        <div
+                                          style={{
+                                            fontSize: '0.7rem',
+                                            color: 'var(--accent)',
+                                            fontWeight: 600,
+                                          }}
+                                        >
                                           🎸 {getNomeInst(al.instrumentoId)}
                                         </div>
                                       )}
                                       {temConflito && (
                                         <div
                                           style={{
-                                            color: '#fecaca',
+                                            color: 'var(--danger-text)',
                                             fontWeight: 700,
                                             fontSize: '0.7rem',
                                             marginTop: 2,
@@ -1967,9 +2035,9 @@ export default function App() {
                                         onClick={() => removerAlocacao(al.id)}
                                         style={{
                                           marginTop: 4,
-                                          background: 'rgba(0,0,0,0.25)',
-                                          border: 'none',
-                                          color: '#cbd5e1',
+                                          background: 'var(--bg-card)',
+                                          border: '1px solid var(--border-color)',
+                                          color: 'var(--text-secondary)',
                                           fontSize: '0.68rem',
                                           padding: '2px 6px',
                                           borderRadius: 4,
@@ -2057,7 +2125,7 @@ export default function App() {
           {abaAtiva === 'mod4' && (
             <div>
               <div className="card" style={{ marginBottom: 20 }}>
-                <div className="card-header" style={{ flexWrap: 'wrap' }}>
+                <div className="card-header">
                   <h3 className="card-title">
                     <Plus size={18} /> Registrar Execução de Aula (Planejado vs. Realizado)
                   </h3>
@@ -2198,7 +2266,7 @@ export default function App() {
               </div>
 
               <div className="card">
-                <div className="card-header" style={{ flexWrap: 'wrap' }}>
+                <div className="card-header">
                   <h3 className="card-title">
                     Histórico Diário: Planejado vs. Realizado ({registrosFiltrados.length} aulas)
                   </h3>
@@ -2252,13 +2320,21 @@ export default function App() {
                                   ? 'badge-success'
                                   : r.status === 'Remarcada'
                                   ? 'badge-info'
+                                  : r.status === 'Falta do Aluno'
+                                  ? 'badge-warning'
                                   : 'badge-danger'
                               }`}
                             >
                               {r.status}
                             </span>
                             {r.dataRemarcacao && (
-                              <div style={{ fontSize: '0.7rem', color: '#60a5fa', marginTop: 2 }}>
+                              <div
+                                style={{
+                                  fontSize: '0.7rem',
+                                  color: 'var(--info-text)',
+                                  marginTop: 2,
+                                }}
+                              >
                                 ↪ {r.dataRemarcacao}
                               </div>
                             )}
