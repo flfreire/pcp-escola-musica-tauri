@@ -1,0 +1,21 @@
+[package]
+name = "pcp-escola-musica"
+version = "1.0.0"
+description = "Sistema Integrado de PCP para Escola de Música de Pequeno Porte"
+authors = ["Harmonia PCP"]
+license = "MIT"
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "pcp_escola_musica_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "2.0.0", features = [] }

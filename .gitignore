@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Tauri / Rust build artifacts
+src-tauri/target/
+src-tauri/WixTools/
+
+# Environment & OS files
+.env
+.env.*
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,75 @@
+name: Build & Release Multiplataforma (Tauri)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            args: '--bundles nsis,msi'
+          - platform: 'ubuntu-22.04'
+            args: '--bundles deb,appimage'
+          - platform: 'macos-latest'
+            args: '--bundles dmg'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux dependencies (WebKitGTK & AppImage)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf fuse libfuse2
+
+      - name: Install Frontend Dependencies
+        run: npm install
+
+      - name: Build Frontend
+        run: npm run build
+
+      - name: Build and Publish Tauri Bundles (Windows Setup, Linux Deb/AppImage, macOS DMG)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: 'Harmonia PCP v__VERSION__ — Sistema Integrado de PCP para Escola de Música'
+          releaseBody: |
+            ## Harmonia PCP v__VERSION__ — Sistema Integrado de PCP para Escola de Música de Pequeno Porte
+
+            Aplicação desktop multiplataforma construída em **Tauri v2 + React** fundamentada nos conceitos de **Planejamento e Controle da Produção (PCP)** adaptados ao setor de serviços educacionais musicais.
+
+            ### 📦 Instaladores Disponíveis nesta Release:
+            - **Windows**: Instalador Setup (`.exe` NSIS e `.msi`)
+            - **Linux**: Pacotes `.deb` (Debian/Ubuntu) e `.AppImage`
+            - **macOS**: Imagem de Disco `.dmg`
+
+            ### 🧩 Os 5 Módulos Integrados:
+            1. **Módulo 1 — Cadastros Base**: Professores (com carga horária), Salas disponíveis (capacidade e equipamentos) e Inventário de instrumentos móveis.
+            2. **Módulo 2 — Gestão de Alunos e Matrículas**: Repositório unificado com histórico e status (`Ativo`, `Trancado` ou `Cancelado`).
+            3. **Módulo 3 — Quadro de Programação e Alocação (PCP Operacional)**: Grade horária semanal que cruza professor, aluno, sala e instrumento com validações automáticas e alertas visuais contra overbooking de salas ou sobreposição docente.
+            4. **Módulo 4 — Registro Operacional**: Acompanhamento diário do *Planejado vs. Realizado* (`Realizada`, `Falta do Aluno`, `Cancelada` ou `Remarcada`).
+            5. **Módulo 5 — Dashboard de Indicadores Gerenciais (Painel de PCP)**: Consolidação automática dos 4 KPIs estratégicos (Taxa de Ocupação das Salas, Taxa de Utilização dos Professores, Índice de Aulas Realizadas e Absenteísmo, e Taxa de Evasão / Churn Rate) + Exportação para Excel/Google Planilhas (`.csv`).
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
