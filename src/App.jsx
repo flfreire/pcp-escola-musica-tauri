@@ -574,9 +574,9 @@ export default function App() {
         <div className="sidebar-footer">
           <button
             className="sidebar-footer-btn"
-            onClick={() => {
-              exportarRelatorioCompletoCSV(state, kpis);
-              mostrarAviso('Planilha integrada CSV (compatível com Excel/Sheets) exportada!');
+            onClick={async () => {
+              const res = await exportarRelatorioCompletoCSV(state, kpis);
+              mostrarAviso(res.msg, res.sucesso ? 'sucesso' : 'erro');
             }}
           >
             <FileSpreadsheet size={16} />
@@ -629,9 +629,9 @@ export default function App() {
             )}
             <button
               className="btn btn-primary"
-              onClick={() => {
-                exportarRelatorioCompletoCSV(state, kpis);
-                mostrarAviso('Planilha integrada exportada com sucesso!');
+              onClick={async () => {
+                const res = await exportarRelatorioCompletoCSV(state, kpis);
+                mostrarAviso(res.msg, res.sucesso ? 'sucesso' : 'erro');
               }}
             >
               <Download size={16} />

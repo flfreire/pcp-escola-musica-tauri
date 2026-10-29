@@ -1,6 +1,6 @@
 [package]
 name = "pcp-escola-musica"
-version = "1.1.0"
+version = "1.2.0"
 description = "Sistema Integrado de PCP — Instituto Nilto Musicalização - Projeto Caminhos da Música"
 authors = ["Instituto Nilto Musicalização"]
 license = "MIT"

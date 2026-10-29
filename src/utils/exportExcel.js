@@ -8,24 +8,58 @@ function escapeCsvCell(val) {
   return `"${str}"`;
 }
 
-export function downloadCsv(filename, headers, rows) {
+export async function downloadCsv(filename, headers, rows) {
   const bom = '\uFEFF';
   const headerLine = headers.map(escapeCsvCell).join(';');
   const bodyLines = rows.map((row) => row.map(escapeCsvCell).join(';')).join('\r\n');
   const csvContent = `${bom}${headerLine}\r\n${bodyLines}`;
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', filename);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // 1. Tentar salvar nativamente via Tauri se estiver rodando no app desktop
+  if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const caminhoSalvo = await invoke('salvar_relatorio_csv', {
+        conteudo: csvContent,
+        nomeArquivo: filename,
+      });
+      return {
+        sucesso: true,
+        caminho: caminhoSalvo,
+        msg: `Planilha salva com sucesso na pasta Downloads (${filename})!`,
+      };
+    } catch (e) {
+      console.warn('Salvamento nativo Tauri falhou ou indisponível, tentando fallback web:', e);
+    }
+  }
+
+  // 2. Método de download tradicional para navegadores / fallback
+  try {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 1000);
+
+    return {
+      sucesso: true,
+      msg: `Planilha ${filename} gerada com sucesso!`,
+    };
+  } catch (err) {
+    return {
+      sucesso: false,
+      msg: `Erro ao exportar planilha: ${err?.message || err}`,
+    };
+  }
 }
 
-export function exportarRelatorioCompletoCSV(state, kpis) {
+export async function exportarRelatorioCompletoCSV(state, kpis) {
   const getProf = (id) => state.professores.find((p) => p.id === id)?.nome || '-';
   const getAluno = (id) => state.alunos.find((a) => a.id === id)?.nome || '-';
   const getSala = (id) => state.salas.find((s) => s.id === id)?.nome || '-';
@@ -43,6 +77,18 @@ export function exportarRelatorioCompletoCSV(state, kpis) {
   ];
 
   const rows = [];
+
+  // Cabeçalho Institucional
+  rows.push([
+    'INSTITUTO NILTO MUSICALIZAÇÃO',
+    'PROJETO CAMINHOS DA MÚSICA',
+    'SISTEMA INTEGRADO DE PCP',
+    'Planejamento e Controle da Produção',
+    new Date().toLocaleDateString('pt-BR'),
+    '',
+    '',
+    '',
+  ]);
 
   // KPIs
   rows.push([
@@ -83,7 +129,7 @@ export function exportarRelatorioCompletoCSV(state, kpis) {
     `${kpis.retencaoAlunos.trancados} trancados / ${kpis.retencaoAlunos.cancelados} cancelados`,
     `Retenção: ${kpis.retencaoAlunos.taxaRetencao}%`,
     `${kpis.retencaoAlunos.churnRate}%`,
-    'Retenção de alunos da escola',
+    'Retenção de alunos da instituição',
   ]);
 
   // Módulo 1 - Professores
@@ -170,5 +216,9 @@ export function exportarRelatorioCompletoCSV(state, kpis) {
     ]);
   }
 
-  downloadCsv('Relatorio_PCP_Escola_de_Musica.csv', headers, rows);
+  return await downloadCsv(
+    'Relatorio_PCP_Instituto_Nilto_Caminhos_da_Musica.csv',
+    headers,
+    rows
+  );
 }
